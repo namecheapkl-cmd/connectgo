@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - connectgo.store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden { display: none !important; }
+    .truncate { 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      white-space: nowrap; 
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- LOGIN -->
+<div id="loginBox" class="flex items-center justify-center min-h-screen">
+  <div class="bg-white p-6 rounded-xl shadow w-80">
+    <h1 class="text-xl font-bold mb-4 text-center">Admin Login</h1>
+    <input id="password" type="password" placeholder="Password"
+      class="w-full border p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      autocomplete="current-password">
+    <button onclick="login()"
+      class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+      Login
+    </button>
+    <p id="loginError" class="text-red-500 text-sm mt-2 hidden">Login gagal</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden p-6">
+  <!-- HEADER -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Shortlink Dashboard</h1>
+      <p class="text-gray-600 text-sm">Domain: <span class="font-mono text-blue-600">https://connectgo.store</span></p>
+    </div>
+    <button onclick="logout()"
+      class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+      Logout
+    </button>
+  </div>
+
+  <!-- ADD FORM -->
+  <div class="bg-white p-4 rounded-lg shadow mb-6">
+    <h2 class="text-lg font-semibold mb-3">Tambah Link Baru</h2>
+    <div class="flex flex-col md:flex-row gap-3">
+      <div class="flex-1">
+        <label class="block text-sm text-gray-600 mb-1">Slug</label>
+        <input id="slug" placeholder="contoh-slug"
+          class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        <p class="text-xs text-gray-500 mt-1">Akan menjadi: https://connectgo.store/<span id="slugPreview" class="font-semibold">[slug]</span></p>
+      </div>
+      <div class="flex-1">
+        <label class="block text-sm text-gray-600 mb-1">URL Tujuan</label>
+        <input id="url" placeholder="https://target.com"
+          class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none">
+      </div>
+      <div class="flex items-end">
+        <button onclick="addLink()"
+          class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition h-[42px]">
+          Tambah
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="p-4 border-b">
+      <h2 class="text-lg font-semibold">Daftar Link</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3 text-left">Slug</th>
+            <th class="p-3 text-left">URL Tujuan</th>
+            <th class="p-3 text-center">Klik</th>
+            <th class="p-3 text-left">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="table" class="divide-y"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="editModal"
+ class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+  <div class="bg-white p-6 rounded-lg w-full max-w-md">
+    <h2 class="text-lg font-bold mb-3">Edit URL</h2>
+    <div class="mb-4">
+      <label class="block text-sm text-gray-600 mb-1">Short URL</label>
+      <p class="font-mono text-sm bg-gray-100 p-2 rounded mb-2">
+        https://connectgo.store/<span id="currentSlug" class="font-bold"></span>
+      </p>
+    </div>
+    <div class="mb-6">
+      <label class="block text-sm text-gray-600 mb-1">URL Tujuan Baru</label>
+      <input id="editUrl" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none">
+    </div>
+    <div class="flex justify-end gap-2">
+      <button onclick="closeEdit()" 
+        class="px-4 py-2 border rounded hover:bg-gray-50 transition">Batal</button>
+      <button onclick="saveEdit()"
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
