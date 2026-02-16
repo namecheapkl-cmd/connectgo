@@ -5,17 +5,13 @@ let TOKEN = localStorage.getItem("token");
 let editSlug = null;
 window.isAuth = !!TOKEN;
 
-/* =========================
-   AUTO LOGIN CHECK
-========================= */
+
 if (TOKEN) {
   scheduleAutoLogout(TOKEN);
   showDashboard();
 }
 
-/* =========================
-   LOGIN
-========================= */
+
 async function login() {
   const password = document.getElementById("password")?.value;
   if (!password) return;
@@ -45,9 +41,7 @@ async function login() {
   }
 }
 
-/* =========================
-   LOGOUT
-========================= */
+
 function logout() {
   localStorage.removeItem("token");
   TOKEN = null;
@@ -57,18 +51,14 @@ function logout() {
   document.getElementById("loginBox")?.classList.remove("hidden");
 }
 
-/* =========================
-   DASHBOARD
-========================= */
+
 function showDashboard() {
   document.getElementById("loginBox")?.classList.add("hidden");
   document.getElementById("dashboard")?.classList.remove("hidden");
   loadLinks();
 }
 
-/* =========================
-   LOAD LINKS
-========================= */
+
 async function loadLinks() {
   try {
     const res = await fetch(API + "/api/links", {
@@ -124,11 +114,13 @@ async function loadLinks() {
   }
 }
 
-/* =========================
-   COPY LINK
-========================= */
+
 function copyToClipboard(slug) {
-  const shortUrl = `${SHORT_DOMAIN}/${slug}`;
+
+  const base = SHORT_DOMAIN.replace(/\/+$/, ""); 
+  const cleanSlug = slug.replace(/^\/+/, "");    
+  const shortUrl = `${base}/${cleanSlug}`;
+  
   try {
     navigator.clipboard.writeText(shortUrl);
     const btn = event.target;
@@ -146,9 +138,6 @@ function copyToClipboard(slug) {
   }
 }
 
-/* =========================
-   ADD LINK
-========================= */
 async function addLink() {
   const slug = document.getElementById("slug")?.value.trim();
   const url = document.getElementById("url")?.value.trim();
@@ -178,9 +167,7 @@ async function addLink() {
   }
 }
 
-/* =========================
-   EDIT LINK (DIPERBAIKI)
-========================= */
+
 function openEdit(slug, url) {
   editSlug = slug;
   const modal = document.getElementById("editModal");
@@ -204,7 +191,7 @@ async function saveEdit() {
   if (!isValidUrl(url)) return alert("Format URL tidak valid");
 
   try {
-    // PERBAIKAN: Hapus slug dari path, kirim dalam body
+
     const res = await fetch(`${API}/api/links`, {
       method: "PUT",
       headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
@@ -225,14 +212,12 @@ async function saveEdit() {
   }
 }
 
-/* =========================
-   DELETE LINK (DIPERBAIKI)
-========================= */
+
 async function delLink(slug) {
   if (!confirm(`Hapus shortlink?\n${SHORT_DOMAIN}/${slug}`)) return;
   
   try {
-    // PERBAIKAN: Hapus slug dari path, kirim dalam body
+
     const res = await fetch(`${API}/api/links`, {
       method: "DELETE",
       headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
@@ -252,9 +237,7 @@ async function delLink(slug) {
   }
 }
 
-/* =========================
-   AUTO LOGOUT
-========================= */
+
 function parseJwt(token) {
   try {
     return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
@@ -275,9 +258,7 @@ function scheduleAutoLogout(token) {
   }, timeLeft * 1000);
 }
 
-/* =========================
-   HELPER FUNCTIONS
-========================= */
+
 function isValidUrl(u) {
   try {
     const url = new URL(u);
@@ -291,9 +272,7 @@ function getShortUrl(slug) {
   return `${SHORT_DOMAIN}/${slug}`;
 }
 
-/* =========================
-   ENTER KEY SUPPORT & UI
-========================= */
+
 document.addEventListener("DOMContentLoaded", function () {
   ["password", "slug", "url", "editUrl"].forEach(id => {
     const el = document.getElementById(id);
@@ -316,9 +295,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-/* =========================
-   QUICK COPY FUNCTION
-========================= */
+
 function quickCopy() {
   const slug = document.getElementById("slug")?.value.trim();
   if (!slug) return alert("Masukkan slug terlebih dahulu");
