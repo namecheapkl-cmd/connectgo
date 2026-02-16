@@ -13,7 +13,6 @@ if (TOKEN) {
   showDashboard();
 }
 
-
 /* =========================
    LOGIN
 ========================= */
@@ -180,7 +179,7 @@ async function addLink() {
 }
 
 /* =========================
-   EDIT LINK
+   EDIT LINK (DIPERBAIKI)
 ========================= */
 function openEdit(slug, url) {
   editSlug = slug;
@@ -205,7 +204,8 @@ async function saveEdit() {
   if (!isValidUrl(url)) return alert("Format URL tidak valid");
 
   try {
-    const res = await fetch(`${API}/api/links/${editSlug}`, {
+    // PERBAIKAN: Hapus slug dari path, kirim dalam body
+    const res = await fetch(`${API}/api/links`, {
       method: "PUT",
       headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
       body: JSON.stringify({ slug: editSlug, url })
@@ -226,12 +226,14 @@ async function saveEdit() {
 }
 
 /* =========================
-   DELETE LINK
+   DELETE LINK (DIPERBAIKI)
 ========================= */
 async function delLink(slug) {
   if (!confirm(`Hapus shortlink?\n${SHORT_DOMAIN}/${slug}`)) return;
+  
   try {
-    const res = await fetch(`${API}/api/links/${slug}`, {
+    // PERBAIKAN: Hapus slug dari path, kirim dalam body
+    const res = await fetch(`${API}/api/links`, {
       method: "DELETE",
       headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
       body: JSON.stringify({ slug })
