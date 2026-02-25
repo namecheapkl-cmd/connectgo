@@ -1,16 +1,18 @@
 const API = "https://connectgo.namecheapkl.workers.dev";
-const SHORT_DOMAIN = "https://djx.connectgo.store/";
+const SHORT_DOMAIN = "https://djx.connectgo.store";
 
 let TOKEN = localStorage.getItem("token");
 let editSlug = null;
 window.isAuth = !!TOKEN;
 
+/* ================= INIT ================= */
 
 if (TOKEN) {
   scheduleAutoLogout(TOKEN);
   showDashboard();
 }
 
+/* ================= LOGIN ================= */
 
 async function login() {
   const password = document.getElementById("password")?.value;
@@ -35,12 +37,14 @@ async function login() {
 
     scheduleAutoLogout(TOKEN);
     showDashboard();
+
   } catch (err) {
     console.error(err);
     alert("Gagal login, silakan coba lagi.");
   }
 }
 
+/* ================= LOGOUT ================= */
 
 function logout() {
   localStorage.removeItem("token");
@@ -51,6 +55,7 @@ function logout() {
   document.getElementById("loginBox")?.classList.remove("hidden");
 }
 
+/* ================= DASHBOARD ================= */
 
 function showDashboard() {
   document.getElementById("loginBox")?.classList.add("hidden");
@@ -58,6 +63,7 @@ function showDashboard() {
   loadLinks();
 }
 
+/* ================= LOAD LINKS ================= */
 
 async function loadLinks() {
   try {
@@ -65,7 +71,7 @@ async function loadLinks() {
       headers: { Authorization: "Bearer " + TOKEN }
     });
 
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       logout();
       return;
     }
@@ -73,6 +79,7 @@ async function loadLinks() {
     const links = await res.json();
     const table = document.getElementById("table");
     if (!table) return;
+
     table.innerHTML = "";
 
     links.forEach(l => {
@@ -81,7 +88,7 @@ async function loadLinks() {
           <td class="p-2">
             <div class="flex items-center gap-1">
               <span class="font-mono">${l.slug}</span>
-              <button onclick="copyToClipboard('${l.slug}')" 
+              <button onclick="copyToClipboard(event,'${l.slug}')"
                 class="text-xs text-gray-500 hover:text-blue-600" title="Copy URL">
                 📋
               </button>
@@ -92,7 +99,7 @@ async function loadLinks() {
           <td class="p-2">
             <div class="flex gap-1">
               <a href="${SHORT_DOMAIN}/${l.slug}" 
-                 target="_blank" 
+                 target="_blank"
                  class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded hover:bg-green-200">
                 Buka
               </a>
@@ -109,69 +116,79 @@ async function loadLinks() {
         </tr>
       `;
     });
+
   } catch (err) {
     console.error("Gagal load links:", err);
   }
 }
 
+/* ================= COPY ================= */
 
-function copyToClipboard(slug) {
+function copyToClipboard(e, slug) {
+  const shortUrl = `${SHORT_DOMAIN}/${slug}`;
 
-  const base = SHORT_DOMAIN.replace(/\/+$/, ""); 
-  const cleanSlug = slug.replace(/^\/+/, "");    
-  const shortUrl = `${base}/${cleanSlug}`;
-  
-  try {
-    navigator.clipboard.writeText(shortUrl);
-    const btn = event.target;
-    if (!btn) return;
-    const originalText = btn.textContent;
+  navigator.clipboard.writeText(shortUrl).then(() => {
+    const btn = e.target;
+    const original = btn.textContent;
     btn.textContent = "✓";
     btn.className = "text-xs text-green-600 font-bold";
+
     setTimeout(() => {
-      btn.textContent = originalText;
+      btn.textContent = original;
       btn.className = "text-xs text-gray-500 hover:text-blue-600";
     }, 1500);
-  } catch (err) {
-    console.error("Gagal copy:", err);
+
+  }).catch(() => {
     alert("Gagal menyalin link.");
-  }
+  });
 }
+
+/* ================= ADD LINK ================= */
 
 async function addLink() {
   const slug = document.getElementById("slug")?.value.trim();
   const url = document.getElementById("url")?.value.trim();
+
   if (!slug || !url) return alert("Slug dan URL wajib diisi");
   if (!isValidUrl(url)) return alert("Format URL tidak valid");
-  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return alert("Slug hanya boleh huruf, angka, _, -");
+  if (!/^[a-zA-Z0-9_-]+$/.test(slug))
+    return alert("Slug hanya boleh huruf, angka, _, -");
 
   try {
     const res = await fetch(API + "/api/links", {
       method: "POST",
-      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+      headers: {
+        Authorization: "Bearer " + TOKEN,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ slug, url })
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const error = await res.json();
-      return alert(error.message || "Gagal menambah link");
+      return alert(data.error || "Gagal menambah link");
     }
 
     document.getElementById("slug").value = "";
     document.getElementById("url").value = "";
     loadLinks();
+
     alert(`✅ Link berhasil dibuat!\n${SHORT_DOMAIN}/${slug}`);
+
   } catch (err) {
     console.error(err);
     alert("Terjadi kesalahan saat menambah link");
   }
 }
 
+/* ================= EDIT ================= */
 
 function openEdit(slug, url) {
   editSlug = slug;
   const modal = document.getElementById("editModal");
   if (!modal) return;
+
   document.getElementById("editUrl").value = url;
   modal.classList.remove("hidden");
   modal.classList.add("flex");
@@ -180,6 +197,7 @@ function openEdit(slug, url) {
 function closeEdit() {
   const modal = document.getElementById("editModal");
   if (!modal) return;
+
   modal.classList.add("hidden");
   modal.classList.remove("flex");
   editSlug = null;
@@ -187,60 +205,75 @@ function closeEdit() {
 
 async function saveEdit() {
   const url = document.getElementById("editUrl")?.value.trim();
+
   if (!url) return alert("URL tidak boleh kosong");
   if (!isValidUrl(url)) return alert("Format URL tidak valid");
 
   try {
-
-    const res = await fetch(`${API}/api/links`, {
+    const res = await fetch(API + "/api/links", {
       method: "PUT",
-      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+      headers: {
+        Authorization: "Bearer " + TOKEN,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ slug: editSlug, url })
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const error = await res.json();
-      return alert(error.message || "Gagal menyimpan perubahan");
+      return alert(data.error || "Gagal menyimpan perubahan");
     }
 
     closeEdit();
     loadLinks();
     alert("✅ Link berhasil diperbarui!");
+
   } catch (err) {
     console.error(err);
     alert("Terjadi kesalahan saat menyimpan perubahan");
   }
 }
 
+/* ================= DELETE ================= */
 
 async function delLink(slug) {
   if (!confirm(`Hapus shortlink?\n${SHORT_DOMAIN}/${slug}`)) return;
-  
-  try {
 
-    const res = await fetch(`${API}/api/links`, {
+  try {
+    const res = await fetch(API + "/api/links", {
       method: "DELETE",
-      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+      headers: {
+        Authorization: "Bearer " + TOKEN,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ slug })
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const error = await res.json();
-      return alert(error.message || "Gagal menghapus link");
+      return alert(data.error || "Gagal menghapus link");
     }
 
     loadLinks();
     alert("✅ Link berhasil dihapus!");
+
   } catch (err) {
     console.error(err);
     alert("Terjadi kesalahan saat menghapus link");
   }
 }
 
+/* ================= JWT ================= */
 
 function parseJwt(token) {
   try {
-    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const base64Url = token.split('.')[1];
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = base64.length % 4;
+    if (pad) base64 += '='.repeat(4 - pad);
+    return JSON.parse(atob(base64));
   } catch {
     return null;
   }
@@ -249,6 +282,7 @@ function parseJwt(token) {
 function scheduleAutoLogout(token) {
   const payload = parseJwt(token);
   if (!payload?.exp) return;
+
   const timeLeft = payload.exp - Math.floor(Date.now() / 1000);
   if (timeLeft <= 0) return logout();
 
@@ -258,6 +292,7 @@ function scheduleAutoLogout(token) {
   }, timeLeft * 1000);
 }
 
+/* ================= VALIDATION ================= */
 
 function isValidUrl(u) {
   try {
@@ -268,15 +303,13 @@ function isValidUrl(u) {
   }
 }
 
-function getShortUrl(slug) {
-  return `${SHORT_DOMAIN}/${slug}`;
-}
-
+/* ================= ENTER KEY ================= */
 
 document.addEventListener("DOMContentLoaded", function () {
   ["password", "slug", "url", "editUrl"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
+
     el.addEventListener("keypress", e => {
       if (e.key !== "Enter") return;
       if (id === "password") login();
@@ -284,21 +317,4 @@ document.addEventListener("DOMContentLoaded", function () {
       if (id === "editUrl") saveEdit();
     });
   });
-
-  const slugInput = document.getElementById("slug");
-  if (slugInput) slugInput.addEventListener("input", () => slugInput.title = `${SHORT_DOMAIN}/${slugInput.value.trim()}`);
-
-  const urlInput = document.getElementById("url");
-  if (urlInput) urlInput.addEventListener("blur", () => {
-    if (urlInput.value && !isValidUrl(urlInput.value)) urlInput.classList.add("border-red-500");
-    else urlInput.classList.remove("border-red-500");
-  });
 });
-
-
-function quickCopy() {
-  const slug = document.getElementById("slug")?.value.trim();
-  if (!slug) return alert("Masukkan slug terlebih dahulu");
-  const shortUrl = `${SHORT_DOMAIN}/${slug}`;
-  navigator.clipboard.writeText(shortUrl).then(() => alert(`Copied: ${shortUrl}`)).catch(err => console.error(err));
-}
