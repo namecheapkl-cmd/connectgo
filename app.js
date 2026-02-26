@@ -1,5 +1,5 @@
 const API = "https://connect.namecheapkl.workers.dev";
-const SHORT_DOMAIN = "https://connect.namecheapkl.workers.dev";
+const SHORT_DOMAIN = "https://lynkz.site";
 
 let TOKEN = localStorage.getItem("token");
 let editSlug = null;
