@@ -1,5 +1,5 @@
 const API = "https://connectgo.namecheapkl.workers.dev";
-const SHORT_DOMAIN = "https://djx.connectgo.store";
+const SHORT_DOMAIN = "https://contoh.com";
 
 let TOKEN = localStorage.getItem("token");
 let editSlug = null;
