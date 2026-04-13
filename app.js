@@ -5,31 +5,13 @@ let TOKEN = localStorage.getItem("token");
 let editSlug = null;
 window.isAuth = !!TOKEN;
 
-/* =========================
-   AUTO LOGIN CHECK
-========================= */
+/* ================= AUTO LOGIN ================= */
 if (TOKEN) {
   scheduleAutoLogout(TOKEN);
   showDashboard();
 }
 
-/* =========================
-   AUTO RELOGIN FOR /bandarslot367
-========================= */
-document.addEventListener("DOMContentLoaded", function () {
-  const currentUrl = new URL(window.location.href);
-  const path = currentUrl.pathname.replace(/\/$/, "");
-  if (path === "/bandarslot367" && currentUrl.searchParams.get("reLogin") === "yes") {
-    if (document.getElementById("loginBox")) {
-      document.getElementById("loginBox").classList.remove("hidden");
-      document.getElementById("dashboard")?.classList.add("hidden");
-    }
-  }
-});
-
-/* =========================
-   LOGIN
-========================= */
+/* ================= LOGIN ================= */
 async function login() {
   const password = document.getElementById("password")?.value;
   if (!password) return;
@@ -49,252 +31,189 @@ async function login() {
     const data = await res.json();
     TOKEN = data.token;
     localStorage.setItem("token", TOKEN);
-    window.isAuth = true;
 
     scheduleAutoLogout(TOKEN);
     showDashboard();
+
   } catch (err) {
     console.error(err);
-    alert("Gagal login, silakan coba lagi.");
+    alert("Gagal login");
   }
 }
 
-/* =========================
-   LOGOUT
-========================= */
+/* ================= LOGOUT ================= */
 function logout() {
   localStorage.removeItem("token");
   TOKEN = null;
-  window.isAuth = false;
 
   document.getElementById("dashboard")?.classList.add("hidden");
   document.getElementById("loginBox")?.classList.remove("hidden");
 }
 
-/* =========================
-   DASHBOARD
-========================= */
+/* ================= DASHBOARD ================= */
 function showDashboard() {
   document.getElementById("loginBox")?.classList.add("hidden");
   document.getElementById("dashboard")?.classList.remove("hidden");
   loadLinks();
 }
 
-/* =========================
-   LOAD LINKS
-========================= */
+/* ================= LOAD LINKS ================= */
 async function loadLinks() {
   try {
     const res = await fetch(API + "/api/links", {
       headers: { Authorization: "Bearer " + TOKEN }
     });
 
-    if (res.status === 401) {
-      logout();
-      return;
-    }
+    if (res.status === 401) return logout();
 
     const links = await res.json();
     const table = document.getElementById("table");
-    if (!table) return;
     table.innerHTML = "";
 
     links.forEach(l => {
       table.innerHTML += `
         <tr class="border-t">
           <td class="p-2">
-            <div class="flex items-center gap-1">
-              <span class="font-mono">${l.slug}</span>
-              <button onclick="copyToClipboard('${l.slug}')" 
-                class="text-xs text-gray-500 hover:text-blue-600" title="Copy URL">
-                📋
-              </button>
-            </div>
+            <span class="font-mono">${l.slug}</span>
+            <button onclick="copyToClipboard('${l.slug}', this)" class="ml-2 text-xs">📋</button>
           </td>
-          <td class="p-2 truncate max-w-xs">${l.url}</td>
-          <td class="p-2 text-center">${l.clicks}</td>
+          <td class="p-2 truncate">${l.url}</td>
+          <td class="p-2 text-center">${l.clicks || 0}</td>
           <td class="p-2">
-            <div class="flex gap-1">
-              <a href="${SHORT_DOMAIN}/${l.slug}" 
-                 target="_blank" 
-                 class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded hover:bg-green-200">
-                Buka
-              </a>
-              <button onclick="openEdit('${l.slug}','${l.url}')"
-                class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded hover:bg-blue-200">
-                Edit
-              </button>
-              <button onclick="delLink('${l.slug}')"
-                class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded hover:bg-red-200">
-                Hapus
-              </button>
-            </div>
+            <a href="${SHORT_DOMAIN}/${l.slug}" target="_blank">Buka</a>
+            <button onclick="openEdit('${l.slug}','${l.url}')">Edit</button>
+            <button onclick="delLink('${l.slug}')">Hapus</button>
           </td>
         </tr>
       `;
     });
+
   } catch (err) {
-    console.error("Gagal load links:", err);
+    console.error(err);
   }
 }
 
-/* =========================
-   COPY LINK
-========================= */
-function copyToClipboard(slug) {
+/* ================= COPY ================= */
+function copyToClipboard(slug, el) {
+  const shortUrl = `${SHORT_DOMAIN}/${slug}`;
+  navigator.clipboard.writeText(shortUrl);
 
-  const base = SHORT_DOMAIN.replace(/\/+$/, ""); 
-  const cleanSlug = slug.replace(/^\/+/, "");    
-  const shortUrl = `${base}/${cleanSlug}`;
-  
-  try {
-    navigator.clipboard.writeText(shortUrl);
-    const btn = event.target;
-    if (!btn) return;
-    const originalText = btn.textContent;
-    btn.textContent = "✓";
-    btn.className = "text-xs text-green-600 font-bold";
-    setTimeout(() => {
-      btn.textContent = originalText;
-      btn.className = "text-xs text-gray-500 hover:text-blue-600";
-    }, 1500);
-  } catch (err) {
-    console.error("Gagal copy:", err);
-    alert("Gagal menyalin link.");
-  }
+  if (!el) return;
+  const original = el.textContent;
+  el.textContent = "✓";
+
+  setTimeout(() => {
+    el.textContent = original;
+  }, 1500);
 }
 
-/* =========================
-   ADD LINK (FIX TOTAL)
-========================= */
+/* ================= ADD LINK ================= */
 async function addLink() {
   const slug = document.getElementById("slug")?.value.trim();
   const url = document.getElementById("url")?.value.trim();
-  if (!slug || !url) return alert("Slug dan URL wajib diisi");
-  if (!isValidUrl(url)) return alert("Format URL tidak valid");
-  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return alert("Slug hanya boleh huruf, angka, _, -");
+
+  if (!slug || !url) return alert("Slug & URL wajib");
+  if (!isValidUrl(url)) return alert("URL tidak valid");
 
   try {
     const res = await fetch(API + "/api/links", {
       method: "POST",
-      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+      headers: {
+        Authorization: "Bearer " + TOKEN,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ slug, url })
     });
 
     if (!res.ok) {
-
-      let errorText = "Gagal menambah link";
-
-      try {
-        const error = await res.json();
-        errorText = error.error || error.message || errorText;
-      } catch {
-        errorText = await res.text();
-      }
-
-      return alert(errorText);
+      const err = await res.json();
+      return alert(err.error || "Gagal");
     }
 
     document.getElementById("slug").value = "";
     document.getElementById("url").value = "";
+
     loadLinks();
-    alert(`✅ Link berhasil dibuat!\n${SHORT_DOMAIN}/${slug}`);
+    alert("Link berhasil dibuat");
 
   } catch (err) {
-    console.error("ERROR REAL:", err);
-    alert("Terjadi kesalahan saat menambah link");
+    console.error(err);
+    alert("Error");
   }
 }
 
-/* =========================
-   EDIT LINK
-========================= */
+/* ================= EDIT ================= */
 function openEdit(slug, url) {
   editSlug = slug;
-  const modal = document.getElementById("editModal");
-  if (!modal) return;
   document.getElementById("editUrl").value = url;
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
+  document.getElementById("editModal").classList.remove("hidden");
 }
 
 function closeEdit() {
-  const modal = document.getElementById("editModal");
-  if (!modal) return;
-  modal.classList.add("hidden");
-  modal.classList.remove("flex");
+  document.getElementById("editModal").classList.add("hidden");
   editSlug = null;
 }
 
 async function saveEdit() {
   const url = document.getElementById("editUrl")?.value.trim();
-  if (!url) return alert("URL tidak boleh kosong");
-  if (!isValidUrl(url)) return alert("Format URL tidak valid");
+
+  if (!url) return alert("URL kosong");
 
   try {
-    const res = await fetch(`${API}/api/links/${editSlug}`, {
+    const res = await fetch(`${API}/api/links`, {
       method: "PUT",
-      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+      headers: {
+        Authorization: "Bearer " + TOKEN,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ slug: editSlug, url })
     });
 
     if (!res.ok) {
-      let errorText = "Gagal menyimpan perubahan";
-      try {
-        const error = await res.json();
-        errorText = error.error || error.message || errorText;
-      } catch {
-        errorText = await res.text();
-      }
-      return alert(errorText);
+      const err = await res.json();
+      return alert(err.error || "Gagal update");
     }
 
     closeEdit();
     loadLinks();
-    alert("✅ Link berhasil diperbarui!");
+    alert("Berhasil update");
+
   } catch (err) {
     console.error(err);
-    alert("Terjadi kesalahan saat menyimpan perubahan");
   }
 }
 
-/* =========================
-   DELETE LINK
-========================= */
+/* ================= DELETE ================= */
 async function delLink(slug) {
-  if (!confirm(`Hapus shortlink?\n${SHORT_DOMAIN}/${slug}`)) return;
+  if (!confirm("Hapus link?")) return;
+
   try {
-    const res = await fetch(`${API}/api/links/${slug}`, {
+    const res = await fetch(`${API}/api/links`, {
       method: "DELETE",
-      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+      headers: {
+        Authorization: "Bearer " + TOKEN,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ slug })
     });
 
     if (!res.ok) {
-      let errorText = "Gagal menghapus link";
-      try {
-        const error = await res.json();
-        errorText = error.error || error.message || errorText;
-      } catch {
-        errorText = await res.text();
-      }
-      return alert(errorText);
+      const err = await res.json();
+      return alert(err.error || "Gagal hapus");
     }
 
     loadLinks();
-    alert("✅ Link berhasil dihapus!");
+    alert("Berhasil dihapus");
+
   } catch (err) {
     console.error(err);
-    alert("Terjadi kesalahan saat menghapus link");
   }
 }
 
-/* =========================
-   AUTO LOGOUT
-========================= */
+/* ================= AUTO LOGOUT ================= */
 function parseJwt(token) {
   try {
-    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return JSON.parse(atob(token.split(".")[1]));
   } catch {
     return null;
   }
@@ -303,18 +222,16 @@ function parseJwt(token) {
 function scheduleAutoLogout(token) {
   const payload = parseJwt(token);
   if (!payload?.exp) return;
-  const timeLeft = payload.exp - Math.floor(Date.now() / 1000);
-  if (timeLeft <= 0) return logout();
+
+  const timeout = payload.exp * 1000 - Date.now();
 
   setTimeout(() => {
-    alert("Sesi login habis, silakan login ulang.");
+    alert("Session habis");
     logout();
-  }, timeLeft * 1000);
+  }, timeout);
 }
 
-/* =========================
-   HELPER FUNCTIONS
-========================= */
+/* ================= HELPER ================= */
 function isValidUrl(u) {
   try {
     const url = new URL(u);
@@ -322,45 +239,4 @@ function isValidUrl(u) {
   } catch {
     return false;
   }
-}
-
-function getShortUrl(slug) {
-  return `${SHORT_DOMAIN}/${slug}`;
-}
-
-/* =========================
-   ENTER KEY SUPPORT & UI
-========================= */
-document.addEventListener("DOMContentLoaded", function () {
-  ["password", "slug", "url", "editUrl"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("keypress", e => {
-      if (e.key !== "Enter") return;
-      if (id === "password") login();
-      if (id === "slug" || id === "url") addLink();
-      if (id === "editUrl") saveEdit();
-    });
-  });
-
-  const slugInput = document.getElementById("slug");
-  if (slugInput) slugInput.addEventListener("input", () => slugInput.title = `${SHORT_DOMAIN}/${slugInput.value.trim()}`);
-
-  const urlInput = document.getElementById("url");
-  if (urlInput) urlInput.addEventListener("blur", () => {
-    if (urlInput.value && !isValidUrl(urlInput.value)) urlInput.classList.add("border-red-500");
-    else urlInput.classList.remove("border-red-500");
-  });
-});
-
-/* =========================
-   QUICK COPY FUNCTION
-========================= */
-function quickCopy() {
-  const slug = document.getElementById("slug")?.value.trim();
-  if (!slug) return alert("Masukkan slug terlebih dahulu");
-  const shortUrl = `${SHORT_DOMAIN}/${slug}`;
-  navigator.clipboard.writeText(shortUrl)
-    .then(() => alert(`Copied: ${shortUrl}`))
-    .catch(err => console.error(err));
 }
