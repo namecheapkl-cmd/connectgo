@@ -165,7 +165,7 @@ function copyToClipboard(slug) {
 }
 
 /* =========================
-   ADD LINK (FIXED)
+   ADD LINK (FIX TOTAL)
 ========================= */
 async function addLink() {
   const slug = document.getElementById("slug")?.value.trim();
@@ -182,16 +182,26 @@ async function addLink() {
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      return alert(error.error || error.message || "Gagal menambah link");
+
+      let errorText = "Gagal menambah link";
+
+      try {
+        const error = await res.json();
+        errorText = error.error || error.message || errorText;
+      } catch {
+        errorText = await res.text();
+      }
+
+      return alert(errorText);
     }
 
     document.getElementById("slug").value = "";
     document.getElementById("url").value = "";
     loadLinks();
     alert(`✅ Link berhasil dibuat!\n${SHORT_DOMAIN}/${slug}`);
+
   } catch (err) {
-    console.error(err);
+    console.error("ERROR REAL:", err);
     alert("Terjadi kesalahan saat menambah link");
   }
 }
@@ -229,8 +239,14 @@ async function saveEdit() {
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      return alert(error.error || error.message || "Gagal menyimpan perubahan");
+      let errorText = "Gagal menyimpan perubahan";
+      try {
+        const error = await res.json();
+        errorText = error.error || error.message || errorText;
+      } catch {
+        errorText = await res.text();
+      }
+      return alert(errorText);
     }
 
     closeEdit();
@@ -255,8 +271,14 @@ async function delLink(slug) {
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      return alert(error.error || error.message || "Gagal menghapus link");
+      let errorText = "Gagal menghapus link";
+      try {
+        const error = await res.json();
+        errorText = error.error || error.message || errorText;
+      } catch {
+        errorText = await res.text();
+      }
+      return alert(errorText);
     }
 
     loadLinks();
