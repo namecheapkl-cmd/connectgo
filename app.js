@@ -18,7 +18,7 @@ if (TOKEN) {
 ========================= */
 document.addEventListener("DOMContentLoaded", function () {
   const currentUrl = new URL(window.location.href);
-  const path = currentUrl.pathname.replace(/\/$/, ""); // hapus trailing slash
+  const path = currentUrl.pathname.replace(/\/$/, "");
   if (path === "/bandarslot367" && currentUrl.searchParams.get("reLogin") === "yes") {
     if (document.getElementById("loginBox")) {
       document.getElementById("loginBox").classList.remove("hidden");
@@ -165,7 +165,7 @@ function copyToClipboard(slug) {
 }
 
 /* =========================
-   ADD LINK
+   ADD LINK (FIXED)
 ========================= */
 async function addLink() {
   const slug = document.getElementById("slug")?.value.trim();
@@ -183,7 +183,7 @@ async function addLink() {
 
     if (!res.ok) {
       const error = await res.json();
-      return alert(error.message || "Gagal menambah link");
+      return alert(error.error || error.message || "Gagal menambah link");
     }
 
     document.getElementById("slug").value = "";
@@ -230,7 +230,7 @@ async function saveEdit() {
 
     if (!res.ok) {
       const error = await res.json();
-      return alert(error.message || "Gagal menyimpan perubahan");
+      return alert(error.error || error.message || "Gagal menyimpan perubahan");
     }
 
     closeEdit();
@@ -256,7 +256,7 @@ async function delLink(slug) {
 
     if (!res.ok) {
       const error = await res.json();
-      return alert(error.message || "Gagal menghapus link");
+      return alert(error.error || error.message || "Gagal menghapus link");
     }
 
     loadLinks();
@@ -338,5 +338,7 @@ function quickCopy() {
   const slug = document.getElementById("slug")?.value.trim();
   if (!slug) return alert("Masukkan slug terlebih dahulu");
   const shortUrl = `${SHORT_DOMAIN}/${slug}`;
-  navigator.clipboard.writeText(shortUrl).then(() => alert(`Copied: ${shortUrl}`)).catch(err => console.error(err));
+  navigator.clipboard.writeText(shortUrl)
+    .then(() => alert(`Copied: ${shortUrl}`))
+    .catch(err => console.error(err));
 }
